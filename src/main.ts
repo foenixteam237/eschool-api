@@ -26,6 +26,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/v1/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Global pipes
   app.useGlobalPipes(

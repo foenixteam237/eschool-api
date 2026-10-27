@@ -7,12 +7,21 @@ export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createPaymentDto: CreatePaymentDto) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: createPaymentDto.studentId },
+    });
+    const defaultSchool = await this.prisma.school.findFirst();
+    const schoolId = student?.schoolId || defaultSchool?.id || '';
+
     return this.prisma.payment.create({
       data: {
-        ...createPaymentDto,
-        type: createPaymentDto.type as any,
+        amount: createPaymentDto.amount,
+        mode: 'CASH',
+        schoolId,
+        studentId: createPaymentDto.studentId,
+        comment: createPaymentDto.description || createPaymentDto.type,
       },
-      include: { student: true },
+      include: { student: true, momoTx: true },
     });
   }
 
@@ -22,24 +31,28 @@ export class PaymentsService {
         studentId: filters?.studentId,
         status: filters?.status as any,
       },
-      include: { student: true, transactions: true },
+      include: { student: true, momoTx: true },
     });
   }
 
   async findOne(id: string) {
     return this.prisma.payment.findUnique({
       where: { id },
-      include: { student: true, transactions: true },
+      include: { student: true, momoTx: true },
     });
   }
 
   async update(id: string, updatePaymentDto: UpdatePaymentDto) {
+    const data: any = {};
+    if (updatePaymentDto.status) {
+      data.status = updatePaymentDto.status as any;
+    }
+    if (updatePaymentDto.paidDate) {
+      data.paidAt = new Date(updatePaymentDto.paidDate);
+    }
     return this.prisma.payment.update({
       where: { id },
-      data: {
-        ...updatePaymentDto,
-        status: updatePaymentDto.status as any,
-      },
+      data,
       include: { student: true },
     });
   }
@@ -50,7 +63,7 @@ export class PaymentsService {
 
   async getTotalDue(studentId: string) {
     const payments = await this.prisma.payment.findMany({
-      where: { studentId, status: { in: ['PENDING', 'OVERDUE'] } },
+      where: { studentId, status: 'PENDING' },
     });
 
     const total = payments.reduce((sum, p) => sum + p.amount, 0);

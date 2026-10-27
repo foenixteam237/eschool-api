@@ -7,20 +7,33 @@ export class ClassesService {
   constructor(private prisma: PrismaService) {}
 
   async create(createClassDto: CreateClassDto) {
-    const data: any = { ...createClassDto };
-    // Remove undefined teacherId
-    if (!data.teacherId) {
-      delete data.teacherId;
-    }
+    const defaultSchool = await this.prisma.school.findFirst();
+    const schoolId = defaultSchool?.id || '';
+
     return this.prisma.class.create({
-      data,
-      include: { teacher: true, students: true, subjects: true },
+      data: {
+        name: createClassDto.name,
+        section: createClassDto.section,
+        capacity: createClassDto.capacity,
+        schoolYearId: createClassDto.schoolYearId,
+        schoolId,
+        homeroomTeacherId: createClassDto.teacherId || null,
+      },
+      include: {
+        homeroomTeacher: { include: { user: true } },
+        enrollments: { include: { student: { include: { user: true } } } },
+        classSubjects: { include: { subject: true } },
+      },
     });
   }
 
   async findAll() {
     return this.prisma.class.findMany({
-      include: { teacher: true, students: true, subjects: true },
+      include: {
+        homeroomTeacher: { include: { user: true } },
+        enrollments: { include: { student: { include: { user: true } } } },
+        classSubjects: { include: { subject: true } },
+      },
     });
   }
 
@@ -28,23 +41,24 @@ export class ClassesService {
     return this.prisma.class.findUnique({
       where: { id },
       include: {
-        teacher: true,
-        students: true,
-        subjects: true,
+        homeroomTeacher: { include: { user: true } },
+        enrollments: { include: { student: { include: { user: true } } } },
+        classSubjects: { include: { subject: true } },
         timetable: true,
       },
     });
   }
 
   async update(id: string, updateClassDto: UpdateClassDto) {
-    const data: any = { ...updateClassDto };
-    if (data.status) {
-      data.status = data.status as any;
-    }
+    const data: any = {};
+    if (updateClassDto.capacity !== undefined) data.capacity = updateClassDto.capacity;
+    if (updateClassDto.status) data.status = updateClassDto.status as any;
+    if (updateClassDto.teacherId !== undefined) data.homeroomTeacherId = updateClassDto.teacherId;
+
     return this.prisma.class.update({
       where: { id },
       data,
-      include: { teacher: true },
+      include: { homeroomTeacher: { include: { user: true } } },
     });
   }
 
@@ -54,7 +68,11 @@ export class ClassesService {
 
   async getStudents(classId: string) {
     return this.prisma.student.findMany({
-      where: { classId },
+      where: {
+        enrollments: {
+          some: { classId },
+        },
+      },
       include: { user: true },
     });
   }

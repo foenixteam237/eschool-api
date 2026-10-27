@@ -11,18 +11,27 @@ export class StudentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createStudentDto: CreateStudentDto) {
+    const defaultSchool = await this.prisma.school.findFirst();
+    const schoolId = defaultSchool?.id || '';
+
     return this.prisma.student.create({
       data: {
         studentId: createStudentDto.studentId,
         enrollmentDate: new Date(),
+        school: {
+          connect: { id: schoolId },
+        },
         user: {
           create: {
             email: createStudentDto.email,
             password: '', // Will be set by auth
             firstName: createStudentDto.firstName,
             lastName: createStudentDto.lastName,
-            role: 'STUDENT',
+            role: 'STUDENT' as any,
             phone: createStudentDto.phone,
+            school: {
+              connect: { id: schoolId },
+            },
           },
         },
       },
@@ -34,12 +43,16 @@ export class StudentsService {
     return this.prisma.student.findMany({
       where: {
         status: filters?.status as any,
-        class: filters?.classId ? { id: filters.classId } : undefined,
+        enrollments: filters?.classId
+          ? {
+              some: { classId: filters.classId },
+            }
+          : undefined,
       },
       include: {
         user: true,
-        class: true,
-        parents: true,
+        enrollments: { include: { class: true } },
+        parentLinks: { include: { parent: { include: { user: true } } } },
       },
       skip: filters?.skip,
       take: filters?.take,
@@ -51,8 +64,8 @@ export class StudentsService {
       where: { id },
       include: {
         user: true,
-        class: true,
-        parents: true,
+        enrollments: { include: { class: true } },
+        parentLinks: { include: { parent: { include: { user: true } } } },
         grades: true,
         attendance: true,
       },
@@ -60,14 +73,18 @@ export class StudentsService {
   }
 
   async update(id: string, updateStudentDto: UpdateStudentDto) {
-    const data: any = { ...updateStudentDto };
+    const { classId, ...rest } = updateStudentDto;
+    const data: any = { ...rest };
     if (data.status) {
       data.status = data.status as any;
     }
     return this.prisma.student.update({
       where: { id },
       data,
-      include: { user: true, class: true },
+      include: {
+        user: true,
+        enrollments: { include: { class: true } },
+      },
     });
   }
 
@@ -78,9 +95,9 @@ export class StudentsService {
   }
 
   async getGrades(studentId: string) {
-    return this.prisma.grade.findMany({
+    return this.prisma.gradeEntry.findMany({
       where: { studentId },
-      include: { subject: true },
+      include: { evaluation: { include: { subject: true } } },
     });
   }
 
