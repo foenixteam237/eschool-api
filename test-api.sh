@@ -5,7 +5,7 @@
 
 API_URL="http://localhost:3001/api/v1"
 ADMIN_EMAIL="admin@eschool.com"
-ADMIN_PASSWORD="password123"
+ADMIN_PASSWORD="admin123"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'

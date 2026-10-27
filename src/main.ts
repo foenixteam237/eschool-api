@@ -10,16 +10,16 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   // Enable CORS
-  const corsOrigin = configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000';
+  const corsOrigin = configService.get<string>('CORS_ORIGIN') || '*';
   app.enableCors({
-    origin: corsOrigin,
+    origin: corsOrigin === '*' ? true : corsOrigin,
     credentials: true,
   });
 
   // Setup Swagger
   const config = new DocumentBuilder()
     .setTitle('eSchool Management API by RAMSEYS')
-    .setDescription('Complete API for eSchool management system')
+    .setDescription('Complete API for eSchool management system with role-based auth, student/teacher/class tracking, grading, attendance, and finance.')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
@@ -27,6 +27,15 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/v1/docs', app, document);
   SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('docs', app, document);
+
+  // Redirect root to Swagger docs for web preview
+  const httpAdapter = app.getHttpAdapter().getInstance();
+  if (httpAdapter && typeof httpAdapter.get === 'function') {
+    httpAdapter.get('/', (_req: any, res: any) => {
+      res.redirect('/api/v1/docs');
+    });
+  }
 
   // Global pipes
   app.useGlobalPipes(
@@ -40,14 +49,14 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  const port = configService.get<number>('PORT') || 3500;
-  await app.listen(port);
+  const port = 3000;
+  await app.listen(port, '0.0.0.0');
 
   console.log(`
   🚀 eSchool API Server Started
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  📍 Server URL: http://localhost:${port}
-  📚 Swagger Docs: http://localhost:${port}/api/docs
+  📍 Server URL: http://0.0.0.0:${port}
+  📚 Swagger Docs: http://0.0.0.0:${port}/api/v1/docs
   🔒 CORS Origin: ${corsOrigin}
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `);

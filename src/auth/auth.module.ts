@@ -13,7 +13,7 @@ import { LocalStrategy } from './strategies/local.strategy';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('JWT_SECRET') || 'default-eschool-secret-key-change-in-production',
         signOptions: {
           expiresIn: configService.get<string>('JWT_EXPIRATION') || '7d',
         },

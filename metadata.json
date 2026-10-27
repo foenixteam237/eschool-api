@@ -1,0 +1,6 @@
+{
+  "name": "eSchool Management API",
+  "description": "NestJS Backend API for eSchool management system with JWT auth, Swagger documentation, and PostgreSQL Prisma ORM.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
