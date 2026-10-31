@@ -6,7 +6,7 @@
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0 <21.0.0"
+    "node": "26.x"
   },
   "scripts": {
     "dev": "test -f dist/main.js || npm run build; exec node dist/main",
