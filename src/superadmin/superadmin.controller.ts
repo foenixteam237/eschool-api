@@ -15,9 +15,9 @@ import {
   UpdateTicketStatusDto,
   CreateSupportTicketDto,
 } from './dto/superadmin.dto';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '@/auth/guards/roles.guard';
-import { Roles } from '@/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('SuperAdmin (Concepteur Plateforme SaaS & Abonnements)')
 @Controller('superadmin')

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateSchoolDto, UpdateSchoolDto } from './dto/school.dto';
 
 @Injectable()
