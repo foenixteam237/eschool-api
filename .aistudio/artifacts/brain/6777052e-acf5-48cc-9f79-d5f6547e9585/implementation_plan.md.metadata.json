@@ -1,0 +1,6 @@
+{
+  "summary":  "Plan d'audit de sécurité, de durcissement du contrôle d'accès selon les rôles (RBAC) et de vérification automatisée de l'ensemble des routes de l'API eSchool MINESEC.",
+  "updatedAt":  "2026-10-29T19:04:05.288692143Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

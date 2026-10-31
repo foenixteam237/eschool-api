@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   CreateStudentDto,
@@ -11,22 +11,32 @@ export class StudentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createStudentDto: CreateStudentDto) {
-    return this.prisma.student.create({
-      data: {
-        studentId: createStudentDto.studentId,
-        enrollmentDate: new Date(),
-        user: {
-          create: {
-            email: createStudentDto.email,
-            password: '', // Will be set by auth
-            firstName: createStudentDto.firstName,
-            lastName: createStudentDto.lastName,
-            role: 'STUDENT',
-            phone: createStudentDto.phone,
-          },
+    const data: any = {
+      studentId: createStudentDto.studentId,
+      enrollmentDate: new Date(),
+      user: {
+        create: {
+          email: createStudentDto.email,
+          password: 'password123',
+          firstName: createStudentDto.firstName,
+          lastName: createStudentDto.lastName,
+          role: 'STUDENT',
+          phone: createStudentDto.phone,
         },
       },
-      include: { user: true },
+    };
+
+    if (createStudentDto.classId) {
+      data.class = { connect: { id: createStudentDto.classId } };
+    }
+
+    if (createStudentDto.schoolId) {
+      data.school = { connect: { id: createStudentDto.schoolId } };
+    }
+
+    return this.prisma.student.create({
+      data,
+      include: { user: true, class: true },
     });
   }
 
@@ -34,7 +44,8 @@ export class StudentsService {
     return this.prisma.student.findMany({
       where: {
         status: filters?.status as any,
-        class: filters?.classId ? { id: filters.classId } : undefined,
+        classId: filters?.classId,
+        schoolId: filters?.schoolId,
       },
       include: {
         user: true,
@@ -46,8 +57,22 @@ export class StudentsService {
     });
   }
 
+  async findBySchool(schoolId: string) {
+    return this.prisma.student.findMany({
+      where: { schoolId },
+      include: { user: true, class: true },
+    });
+  }
+
+  async findByClass(classId: string) {
+    return this.prisma.student.findMany({
+      where: { classId },
+      include: { user: true, class: true },
+    });
+  }
+
   async findOne(id: string) {
-    return this.prisma.student.findUnique({
+    const student = await this.prisma.student.findUnique({
       where: { id },
       include: {
         user: true,
@@ -55,11 +80,19 @@ export class StudentsService {
         parents: true,
         grades: true,
         attendance: true,
+        payments: true,
       },
     });
+
+    if (!student) {
+      throw new NotFoundException(`Élève avec l'identifiant ${id} non trouvé`);
+    }
+
+    return student;
   }
 
   async update(id: string, updateStudentDto: UpdateStudentDto) {
+    await this.findOne(id);
     const data: any = { ...updateStudentDto };
     if (data.status) {
       data.status = data.status as any;
@@ -72,12 +105,14 @@ export class StudentsService {
   }
 
   async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.student.delete({
       where: { id },
     });
   }
 
   async getGrades(studentId: string) {
+    await this.findOne(studentId);
     return this.prisma.grade.findMany({
       where: { studentId },
       include: { subject: true },
@@ -85,6 +120,7 @@ export class StudentsService {
   }
 
   async getAttendance(studentId: string, startDate?: Date, endDate?: Date) {
+    await this.findOne(studentId);
     return this.prisma.attendance.findMany({
       where: {
         studentId,

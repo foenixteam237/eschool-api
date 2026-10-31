@@ -123,6 +123,7 @@ model User {
 
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
+  submittedTickets SupportTicket[]
 
   @@map("users")
 }
@@ -150,9 +151,12 @@ model School {
   slogan   String?
   timezone String? @default("Africa/Douala")
 
-  users    User[]
-  teachers Teacher[]
-  students Student[]
+  users          User[]
+  teachers       Teacher[]
+  students       Student[]
+  classes        Class[]
+  subscription   Subscription?
+  supportTickets SupportTicket[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,7 +183,7 @@ model SchoolYear {
 model Class {
   id           String      @id @default(cuid())
   name         String
-  level        String
+  level        String      @default("Secondaire")
   section      String?
   capacity     Int
   status       ClassStatus @default(ACTIVE)
@@ -188,6 +192,9 @@ model Class {
 
   teacherId String?
   teacher   Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -375,9 +382,9 @@ model Attendance {
 model Payment {
   id          String        @id @default(cuid())
   amount      Float
-  type        PaymentType
+  type        PaymentType   @default(TUITION)
   status      PaymentStatus @default(PENDING)
-  dueDate     DateTime
+  dueDate     DateTime      @default(now())
   paidDate    DateTime?
   description String?
   studentId   String
@@ -467,3 +474,40 @@ model Submission {
 
   @@map("submissions")
 }
+
+// ==================== Platform SaaS, Subscriptions & Support ====================
+
+model Subscription {
+  id             String   @id @default(cuid())
+  schoolId       String   @unique
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  plan           String   @default("ANNUEL_STANDARD")
+  status         String   @default("ACTIVE")
+  amount         Float    @default(350000)
+  currency       String   @default("XAF")
+  durationMonths Int      @default(12)
+  startDate      DateTime @default(now())
+  endDate        DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+model SupportTicket {
+  id                String   @id @default(cuid())
+  schoolId          String
+  school            School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  submittedByUserId String
+  submittedByUser   User     @relation(fields: [submittedByUserId], references: [id], onDelete: Cascade)
+  subject           String
+  description       String
+  priority          String   @default("MEDIUM")
+  status            String   @default("OPEN")
+  adminResponse     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("support_tickets")
+}
+

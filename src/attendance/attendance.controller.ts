@@ -13,22 +13,25 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto, UpdateAttendanceDto } from './dto/attendance.dto';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@/auth/guards/roles.guard';
+import { Roles } from '@/auth/decorators/roles.decorator';
 
-@ApiTags('Attendance')
+@ApiTags('Présences & Absences (Attendance)')
 @Controller('attendance')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Record attendance' })
+  @Roles('ADMIN', 'TEACHER')
+  @ApiOperation({ summary: 'Enregistrer une présence ou absence [ADMIN & TEACHER]' })
   create(@Body() createAttendanceDto: CreateAttendanceDto) {
     return this.attendanceService.create(createAttendanceDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get attendance records' })
+  @ApiOperation({ summary: 'Consulter l’historique des présences' })
   findAll(
     @Query('studentId') studentId?: string,
     @Query('classId') classId?: string,
@@ -43,8 +46,21 @@ export class AttendanceController {
     });
   }
 
+  @Get('student/:studentId')
+  @ApiOperation({ summary: 'Consulter l’historique des présences d’un élève' })
+  findByStudent(@Param('studentId') studentId: string) {
+    return this.attendanceService.findAll({ studentId });
+  }
+
+  @Get('class/:classId')
+  @ApiOperation({ summary: 'Consulter l’historique des présences d’une classe' })
+  findByClass(@Param('classId') classId: string) {
+    return this.attendanceService.findAll({ classId });
+  }
+
   @Get('report/:classId')
-  @ApiOperation({ summary: 'Get class attendance report' })
+  @Roles('ADMIN', 'TEACHER')
+  @ApiOperation({ summary: 'Rapport d’assiduité d’une classe [ADMIN & TEACHER]' })
   getReport(
     @Param('classId') classId: string,
     @Query('startDate') startDate: string,
@@ -58,13 +74,14 @@ export class AttendanceController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get attendance by ID' })
+  @ApiOperation({ summary: 'Détails d’un enregistrement de présence' })
   findOne(@Param('id') id: string) {
     return this.attendanceService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update attendance' })
+  @Roles('ADMIN', 'TEACHER')
+  @ApiOperation({ summary: 'Modifier une présence (justification) [ADMIN & TEACHER]' })
   update(
     @Param('id') id: string,
     @Body() updateAttendanceDto: UpdateAttendanceDto,
@@ -73,7 +90,8 @@ export class AttendanceController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete attendance' })
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Supprimer un enregistrement de présence [ADMIN uniquement]' })
   remove(@Param('id') id: string) {
     return this.attendanceService.remove(id);
   }

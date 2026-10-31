@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateClassDto, UpdateClassDto } from './dto/class.dto';
 
@@ -8,7 +8,6 @@ export class ClassesService {
 
   async create(createClassDto: CreateClassDto) {
     const data: any = { ...createClassDto };
-    // Remove undefined teacherId
     if (!data.teacherId) {
       delete data.teacherId;
     }
@@ -18,25 +17,37 @@ export class ClassesService {
     });
   }
 
-  async findAll() {
+  async findAll(schoolId?: string) {
     return this.prisma.class.findMany({
+      where: schoolId ? { schoolYear: { schoolId } as any } : undefined,
       include: { teacher: true, students: true, subjects: true },
     });
   }
 
+  async findBySchool(schoolId: string) {
+    return this.findAll(schoolId);
+  }
+
   async findOne(id: string) {
-    return this.prisma.class.findUnique({
+    const cls = await this.prisma.class.findUnique({
       where: { id },
       include: {
         teacher: true,
-        students: true,
+        students: { include: { user: true } },
         subjects: true,
         timetable: true,
       },
     });
+
+    if (!cls) {
+      throw new NotFoundException(`Classe avec l'ID ${id} non trouvée`);
+    }
+
+    return cls;
   }
 
   async update(id: string, updateClassDto: UpdateClassDto) {
+    await this.findOne(id);
     const data: any = { ...updateClassDto };
     if (data.status) {
       data.status = data.status as any;
@@ -49,10 +60,12 @@ export class ClassesService {
   }
 
   async remove(id: string) {
+    await this.findOne(id);
     return this.prisma.class.delete({ where: { id } });
   }
 
   async getStudents(classId: string) {
+    await this.findOne(classId);
     return this.prisma.student.findMany({
       where: { classId },
       include: { user: true },
