@@ -116,6 +116,7 @@ model User {
   teacher Teacher?
   student Student?
   parent  Parent?
+  staff   Staff?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -155,6 +156,8 @@ model School {
   teachers       Teacher[]
   students       Student[]
   classes        Class[]
+  staff          Staff[]
+  expenses       Expense[]
   subscription   Subscription?
   supportTickets SupportTicket[]
 
@@ -285,11 +288,12 @@ model Student {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  parents     Parent[]
-  grades      Grade[]
-  attendance  Attendance[]
-  payments    Payment[]
-  assignments Assignment[]
+  parents        Parent[]
+  parentStudents ParentStudent[]
+  grades         Grade[]
+  attendance     Attendance[]
+  payments       Payment[]
+  assignments    Assignment[]
 
   @@map("students")
 }
@@ -301,9 +305,31 @@ model Parent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  students Student[]
+  students       Student[]
+  parentStudents ParentStudent[]
 
   @@map("parents")
+}
+
+enum ParentRelationType {
+  PERE
+  MERE
+  TUTEUR_LEGAL
+  AUTRE
+}
+
+model ParentStudent {
+  id           String             @id @default(cuid())
+  parentId     String
+  parent       Parent             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  relationType ParentRelationType @default(TUTEUR_LEGAL)
+  isPrimary    Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+
+  @@unique([parentId, studentId])
+  @@map("parent_students")
 }
 
 // ==================== Academics & Grades ====================
@@ -510,4 +536,82 @@ model SupportTicket {
 
   @@map("support_tickets")
 }
+
+// ==================== Personnel & Employés Non-Enseignants (Staff) ====================
+
+enum StaffRole {
+  CENSEUR
+  SURVEILLANT_GENERAL
+  COMPTABLE
+  SECRETAIRE
+  INTENDANT
+  INFIRMIER
+  GARDIEN
+  AUTRE
+}
+
+model Staff {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolId   String
+  school     School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  employeeId String    @unique
+  role       StaffRole @default(AUTRE)
+  department String?
+  salary     Float?
+  hireDate   DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("staff")
+}
+
+// ==================== Finances - Dépenses d'Établissement (Expenses) ====================
+
+enum ExpenseCategory {
+  SALAIRE
+  EQUIPEMENT
+  FOURNITURES
+  ELECTRICITE_EAU
+  ENTRETIEN
+  COMMUNICATION
+  EVENEMENT
+  AUTRE
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  schoolId    String
+  school      School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  category    ExpenseCategory @default(AUTRE)
+  amount      Float
+  currency    String          @default("XAF")
+  description String
+  paidDate    DateTime        @default(now())
+  recordedBy  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("expenses")
+}
+
+// ==================== Journal d'Audit & Sécurité RBAC (AuditLog) ====================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  schoolId  String?
+  userId    String?
+  userEmail String?
+  userRole  String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
 

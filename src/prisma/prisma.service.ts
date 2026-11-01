@@ -351,7 +351,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private initializeInMemorySeed() {
-    const hashedAdminPassword = bcrypt.hashSync('admin123', 10);
+    const hashedAdminPassword = bcrypt.hashSync('password123', 10);
     const hashedTeacherPassword = bcrypt.hashSync('teacher123', 10);
     const hashedStudentPassword = bcrypt.hashSync('student123', 10);
 
