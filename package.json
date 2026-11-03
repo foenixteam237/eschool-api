@@ -6,13 +6,13 @@
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "test -f dist/main.js || npm run build; exec node dist/main",
     "prebuild": "rimraf dist",
-    "build": "prisma generate && nest build",
-    "postinstall": "prisma generate",
+    "build": "PRISMA_HIDE_UPDATE_MESSAGE=true prisma generate && nest build",
+    "postinstall": "PRISMA_HIDE_UPDATE_MESSAGE=true prisma generate",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -78,7 +78,6 @@
     "webpack-cli": "^6.0.1"
   },
   "overrides": {
-    "glob": "^10.4.5",
     "rimraf": "^5.0.5"
   },
   "jest": {

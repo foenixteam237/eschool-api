@@ -69,6 +69,11 @@ export default async function handler(req: Request, res: Response) {
   if (!isAppInitialized) {
     await bootstrap();
   }
+  // If Vercel internal rewrite routed the request to /api, restore original path
+  const originalPath = (req.headers['x-matched-path'] as string) || (req.headers['x-forwarded-url'] as string);
+  if (originalPath && req.url === '/api') {
+    req.url = originalPath;
+  }
   return server(req, res);
 }
 
