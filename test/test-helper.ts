@@ -67,6 +67,12 @@ export async function getTestApp(): Promise<{
         transform: true,
       }),
     );
+    const { setupSwagger } = await import('../src/swagger.config');
+    setupSwagger(app);
+    const httpAdapter = app.getHttpAdapter().getInstance();
+    if (httpAdapter && typeof httpAdapter.get === 'function') {
+      httpAdapter.get('/', (_req: any, res: any) => res.redirect('/api/v1/docs'));
+    }
     await app.init();
     serverTarget = app.getHttpServer();
   }

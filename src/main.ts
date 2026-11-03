@@ -2,8 +2,8 @@ import * as dotenv from 'dotenv';
 dotenv.config({ override: true });
 
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { setupSwagger } from './swagger.config';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -29,22 +29,15 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With'],
   });
 
-  // Setup Swagger
-  const config = new DocumentBuilder()
-    .setTitle('eSchool Management API by RAMSEYS')
-    .setDescription('Complete API for eSchool management system with role-based auth, student/teacher/class tracking, grading, attendance, and finance.')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
+  // Setup Swagger with CDN assets for resilient hosting (local + Vercel)
+  setupSwagger(app);
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1/docs', app, document);
-  SwaggerModule.setup('api/docs', app, document);
-  SwaggerModule.setup('docs', app, document);
-
-  // Redirect root to Swagger docs for web preview
+  // Redirect root and /api to Swagger docs for web preview
   if (httpAdapter && typeof httpAdapter.get === 'function') {
     httpAdapter.get('/', (_req: any, res: any) => {
+      res.redirect('/api/v1/docs');
+    });
+    httpAdapter.get('/api', (_req: any, res: any) => {
       res.redirect('/api/v1/docs');
     });
   }

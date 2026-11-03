@@ -113,9 +113,14 @@ Une fois le déploiement terminé (environ 1 minute) :
 
 ## 🛠️ Points clés résolus dans ce projet
 
-1. **Conflit de dépendances Vercel résolu (`ERESOLVE`)** :
+1. **Page blanche Swagger sur Vercel résolue** :
+   - En environnement serverless Vercel, les fichiers statiques de `swagger-ui-dist` (`.css`, `.js`) ne sont pas inclus dans le bundle de la fonction.
+   - Nous avons configuré Swagger (`src/swagger.config.ts`) pour charger automatiquement les scripts et feuilles de style depuis le CDN Cloudflare cdnjs (`customCssUrl` et `customJs`).
+   - Un intercepteur de secours dans `api/index.ts` redirige automatiquement toute requête statique locale résiduelle vers le CDN.
+2. **Conflit de dépendances Vercel résolu (`ERESOLVE`)** :
    - `@nestjs/swagger` est verrouillé en version `^7.4.2` pour s'aligner parfaitement avec `@nestjs/common` v10.
-2. **Entrée Serverless (`api/index.ts`)** :
+3. **Entrée Serverless (`api/index.ts`)** :
    - Un adaptateur Express optimise les démarrages à froid (cold starts) en réutilisant l'instance NestJS entre les requêtes.
-3. **Règles de réécriture (`vercel.json`)** :
+4. **Règles de réécriture (`vercel.json`)** :
    - Toutes les requêtes HTTP sont redirigées sans perte vers le gestionnaire serverless.
+

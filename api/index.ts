@@ -3,10 +3,26 @@ import { AppModule } from '../src/app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import express, { Express, Request, Response } from 'express';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { setupSwagger, SWAGGER_CDN } from '../src/swagger.config';
 
 const server: Express = express();
 let isAppInitialized = false;
+
+// Intercept static Swagger UI asset requests and redirect to CDN (avoids 404/blank page on Vercel)
+server.get(/.*swagger-ui(-standalone-preset)?\.(js|css)(\.map)?$/, (req: Request, res: Response) => {
+  const filename = req.path.split('/').pop() || '';
+  if (filename.endsWith('.css')) {
+    return res.redirect(302, `${SWAGGER_CDN}/swagger-ui.min.css`);
+  }
+  if (filename.includes('standalone')) {
+    return res.redirect(302, `${SWAGGER_CDN}/swagger-ui-standalone-preset.min.js`);
+  }
+  return res.redirect(302, `${SWAGGER_CDN}/swagger-ui-bundle.min.js`);
+});
+
+server.get(/.*favicon-(16x16|32x32)\.png$/, (_req: Request, res: Response) => {
+  return res.redirect(302, 'https://nestjs.com/img/logo-small.svg');
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
@@ -23,22 +39,14 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With'],
   });
 
-  const config = new DocumentBuilder()
-    .setTitle('eSchool Management API by RAMSEYS')
-    .setDescription(
-      'Complete API for eSchool management system with role-based auth, student/teacher/class tracking, grading, attendance, and finance.',
-    )
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1/docs', app, document);
-  SwaggerModule.setup('api/docs', app, document);
-  SwaggerModule.setup('docs', app, document);
+  // Setup Swagger with CDN assets for Vercel
+  setupSwagger(app);
 
   if (httpAdapter && typeof httpAdapter.get === 'function') {
     httpAdapter.get('/', (_req: Request, res: Response) => {
+      res.redirect('/api/v1/docs');
+    });
+    httpAdapter.get('/api', (_req: Request, res: Response) => {
       res.redirect('/api/v1/docs');
     });
   }
@@ -63,3 +71,4 @@ export default async function handler(req: Request, res: Response) {
   }
   return server(req, res);
 }
+
